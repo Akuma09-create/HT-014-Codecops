@@ -39,4 +39,6 @@ class TaskCreate(BaseModel):
     title: str
     description: str
     location: str
+    latitude: float | None = None
+    longitude: float | None = None
     priority: str = "medium"  # low, medium, high, urgent

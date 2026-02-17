@@ -36,6 +36,15 @@ def create_task(req: TaskCreate, user: dict = Depends(get_current_user)):
 
     with store.lock:
         store._task_id += 1
+        # Get lat/lng from linked complaint if not provided
+        lat = req.latitude
+        lng = req.longitude
+        if not lat and req.complaint_id:
+            linked = next((c for c in store.complaints if c["id"] == req.complaint_id), None)
+            if linked:
+                lat = linked.get("latitude")
+                lng = linked.get("longitude")
+
         task = {
             "id": store._task_id,
             "workerId": req.worker_id,
@@ -44,12 +53,15 @@ def create_task(req: TaskCreate, user: dict = Depends(get_current_user)):
             "title": req.title,
             "description": req.description,
             "location": req.location,
+            "latitude": lat,
+            "longitude": lng,
             "priority": req.priority,
             "status": "pending",
             "assignedAt": datetime.now().isoformat(),
             "completedAt": None,
             "completionPhotos": [],
             "completionNote": None,
+            "approved": None,
         }
         store.tasks.append(task)
 
@@ -124,6 +136,45 @@ def complete_task(task_id: int, user: dict = Depends(get_current_user)):
             if c and c["status"] != "resolved":
                 c["status"] = "resolved"
 
+        return task
+
+
+@router.post("/{task_id}/approve")
+def approve_task(task_id: int, user: dict = Depends(get_current_user)):
+    """Admin approves a completed task after reviewing worker photos."""
+    if user["role"] != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can approve tasks")
+    with store.lock:
+        task = next((t for t in store.tasks if t["id"] == task_id), None)
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        if task["status"] != "completed":
+            raise HTTPException(status_code=400, detail="Task must be completed before approval")
+        task["approved"] = True
+        task["approvedAt"] = datetime.now().isoformat()
+
+        # Also mark linked complaint as resolved if not already
+        if task["complaintId"]:
+            c = next((c for c in store.complaints if c["id"] == task["complaintId"]), None)
+            if c:
+                c["status"] = "resolved"
+
+        return task
+
+
+@router.post("/{task_id}/reject")
+def reject_task(task_id: int, user: dict = Depends(get_current_user)):
+    """Admin rejects a completed task — sends it back to in_progress."""
+    if user["role"] != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can reject tasks")
+    with store.lock:
+        task = next((t for t in store.tasks if t["id"] == task_id), None)
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        task["approved"] = False
+        task["status"] = "in_progress"
+        task["completedAt"] = None
+        task["completionPhotos"] = []
         return task
 
 
