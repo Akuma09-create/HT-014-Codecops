@@ -1,12 +1,13 @@
-// Complaint Status — citizen view to track complaint progress
+// Complaint Status — citizen view to track complaint progress with worker completion photos
 import { useState, useEffect } from 'react';
-import { FiCheckCircle, FiClock, FiMapPin, FiLoader } from 'react-icons/fi';
+import { FiCheckCircle, FiClock, FiMapPin, FiLoader, FiImage, FiUser, FiX, FiThumbsUp } from 'react-icons/fi';
 import StatusBadge from '../components/StatusBadge';
 import api from '../api';
 
 const ComplaintStatus = () => {
   const [complaints, setComplaints] = useState([]);
   const [filter, setFilter] = useState('all');
+  const [photoViewer, setPhotoViewer] = useState(null);
 
   useEffect(() => {
     fetchComplaints();
@@ -124,6 +125,62 @@ const ComplaintStatus = () => {
                 )}
               </div>
             )}
+
+            {/* Worker Completion — approved photos */}
+            {c.linkedTask && c.linkedTask.approved && c.linkedTask.completionPhotos.length > 0 && (
+              <div className="mt-3 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <FiThumbsUp size={12} className="text-emerald-400" />
+                  <p className="text-[10px] font-bold text-emerald-400">Work Completed & Approved</p>
+                </div>
+                <div className="flex items-center gap-2 mb-3 text-[10px] text-slate-400">
+                  <FiUser size={10} />
+                  <span>Worker: <strong className="text-slate-300">{c.linkedTask.workerName}</strong></span>
+                  {c.linkedTask.completedAt && (
+                    <span className="text-slate-600">· {formatDate(c.linkedTask.completedAt)}</span>
+                  )}
+                </div>
+                {c.linkedTask.completionNote && (
+                  <p className="text-xs text-slate-300 mb-3 bg-slate-800/40 rounded-lg p-2.5">
+                    "{c.linkedTask.completionNote}"
+                  </p>
+                )}
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <FiImage size={10} /> After-work Photos
+                </p>
+                <div className="flex gap-2 flex-wrap">
+                  {c.linkedTask.completionPhotos.map((url, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setPhotoViewer({ photos: c.linkedTask.completionPhotos, index: i })}
+                      className="w-20 h-20 rounded-xl overflow-hidden border-2 border-emerald-500/20 hover:border-emerald-500/50 transition-colors bg-slate-800/60 group"
+                    >
+                      <img
+                        src={`http://localhost:8000${url}`}
+                        alt={`work-${i + 1}`}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Task in progress indicator */}
+            {c.linkedTask && !c.linkedTask.approved && c.linkedTask.status === 'in_progress' && (
+              <div className="mt-3 p-3 rounded-lg bg-blue-500/5 border border-blue-500/20 flex items-center gap-2">
+                <FiLoader size={12} className="text-blue-400 animate-spin" />
+                <p className="text-[10px] font-bold text-blue-400">Worker {c.linkedTask.workerName} is working on this</p>
+              </div>
+            )}
+
+            {/* Task completed, pending approval */}
+            {c.linkedTask && c.linkedTask.status === 'completed' && c.linkedTask.approved === null && (
+              <div className="mt-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 flex items-center gap-2">
+                <FiClock size={12} className="text-amber-400" />
+                <p className="text-[10px] font-bold text-amber-400">Work done by {c.linkedTask.workerName} — awaiting admin verification</p>
+              </div>
+            )}
           </div>
         ))}
 
@@ -133,6 +190,37 @@ const ComplaintStatus = () => {
           </div>
         )}
       </div>
+
+      {/* Photo Viewer Modal */}
+      {photoViewer && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setPhotoViewer(null)}>
+          <div className="max-w-3xl max-h-[80vh] w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-end mb-2">
+              <button onClick={() => setPhotoViewer(null)} className="w-8 h-8 rounded-lg bg-slate-800/80 text-slate-400 flex items-center justify-center hover:bg-slate-700">
+                <FiX size={16} />
+              </button>
+            </div>
+            <img
+              src={`http://localhost:8000${photoViewer.photos[photoViewer.index]}`}
+              alt="Work completion photo"
+              className="w-full rounded-2xl border border-slate-700/60 shadow-2xl"
+            />
+            {photoViewer.photos.length > 1 && (
+              <div className="flex gap-2 mt-3 justify-center">
+                {photoViewer.photos.map((url, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setPhotoViewer(prev => ({ ...prev, index: i }))}
+                    className={`w-14 h-14 rounded-lg overflow-hidden border-2 ${i === photoViewer.index ? 'border-emerald-500' : 'border-slate-700/50'}`}
+                  >
+                    <img src={`http://localhost:8000${url}`} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
