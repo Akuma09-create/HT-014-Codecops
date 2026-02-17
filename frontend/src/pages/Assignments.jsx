@@ -1,6 +1,6 @@
-// Assignments — admin task management with assign, track, and view worker completion photos
+// Assignments — admin task management with assign, track, approve worker completion photos, and map view
 import { useState, useEffect } from 'react';
-import { FiUsers, FiClipboard, FiCheck, FiAlertTriangle, FiMapPin, FiChevronDown, FiChevronUp, FiPlus, FiImage, FiClock, FiX, FiSend } from 'react-icons/fi';
+import { FiUsers, FiClipboard, FiCheck, FiAlertTriangle, FiMapPin, FiChevronDown, FiChevronUp, FiPlus, FiImage, FiClock, FiX, FiSend, FiExternalLink, FiCheckCircle, FiXCircle, FiThumbsUp, FiThumbsDown } from 'react-icons/fi';
 import StatusBadge from '../components/StatusBadge';
 import api from '../api';
 
@@ -79,6 +79,34 @@ const Assignments = () => {
         priority: 'high',
       }));
     }
+  };
+
+  const approveTask = async (taskId) => {
+    try {
+      await api.post(`/api/tasks/${taskId}/approve`);
+      fetchTasks();
+    } catch (err) { console.error(err); }
+  };
+
+  const rejectTask = async (taskId) => {
+    try {
+      await api.post(`/api/tasks/${taskId}/reject`);
+      fetchTasks();
+    } catch (err) { console.error(err); }
+  };
+
+  const getMapUrl = (task) => {
+    if (task.latitude && task.longitude) {
+      return `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${task.latitude},${task.longitude}&zoom=16`;
+    }
+    return `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(task.location + ', Baramati, Maharashtra')}&zoom=15`;
+  };
+
+  const getDirectionsUrl = (task) => {
+    if (task.latitude && task.longitude) {
+      return `https://www.google.com/maps/dir/?api=1&destination=${task.latitude},${task.longitude}`;
+    }
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(task.location + ', Baramati, Maharashtra')}`;
   };
 
   const formatDate = (iso) => {
@@ -189,6 +217,17 @@ const Assignments = () => {
                 </div>
                 <div className="flex items-center gap-3 ml-3">
                   <StatusBadge status={task.status} />
+                  {/* Approval badge */}
+                  {task.status === 'completed' && task.approved === true && (
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-2 py-0.5">
+                      <FiCheckCircle size={9} /> Approved
+                    </span>
+                  )}
+                  {task.status === 'completed' && task.approved === null && (
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2 py-0.5 animate-pulse">
+                      <FiClock size={9} /> Needs Review
+                    </span>
+                  )}
                   {task.completionPhotos && task.completionPhotos.length > 0 && (
                     <span className="flex items-center gap-1 text-[10px] font-bold text-violet-400 bg-violet-500/10 border border-violet-500/20 rounded-lg px-2 py-0.5">
                       <FiImage size={9} /> {task.completionPhotos.length}
@@ -226,6 +265,35 @@ const Assignments = () => {
                     </div>
                   </div>
 
+                  {/* Map Section */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                        <FiMapPin size={10} /> Task Location Map
+                      </p>
+                      <a
+                        href={getDirectionsUrl(task)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-[10px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
+                      >
+                        <FiExternalLink size={10} /> Open in Google Maps
+                      </a>
+                    </div>
+                    <div className="rounded-xl overflow-hidden border border-slate-700/40 bg-slate-800/30" style={{ height: '200px' }}>
+                      <iframe
+                        src={getMapUrl(task)}
+                        width="100%"
+                        height="100%"
+                        style={{ border: 0 }}
+                        allowFullScreen
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        title={`Map: ${task.location}`}
+                      />
+                    </div>
+                  </div>
+
                   {/* Completion Note */}
                   {task.completionNote && (
                     <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3">
@@ -234,16 +302,18 @@ const Assignments = () => {
                     </div>
                   )}
 
-                  {/* Completion Photos */}
+                  {/* Completion Photos — Admin Review */}
                   {task.completionPhotos && task.completionPhotos.length > 0 && (
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Completion Photos by Worker</p>
+                    <div className={`border rounded-xl p-4 ${task.status === 'completed' && task.approved === null ? 'border-amber-500/30 bg-amber-500/5' : 'border-slate-700/30 bg-slate-800/20'}`}>
+                      <p className="text-[10px] font-bold uppercase tracking-wider mb-2 flex items-center gap-1 ${task.status === 'completed' && task.approved === null ? 'text-amber-400' : 'text-slate-500'}">
+                        <FiImage size={10} /> Worker's Completion Photos {task.status === 'completed' && task.approved === null && '— Review Required'}
+                      </p>
                       <div className="flex gap-3 flex-wrap">
                         {task.completionPhotos.map((url, i) => (
                           <button
                             key={i}
                             onClick={() => setPhotoViewer({ photos: task.completionPhotos, index: i })}
-                            className="w-24 h-24 rounded-xl overflow-hidden border-2 border-slate-700/50 hover:border-cyan-500/50 transition-colors bg-slate-800/60 group"
+                            className="w-28 h-28 rounded-xl overflow-hidden border-2 border-slate-700/50 hover:border-cyan-500/50 transition-colors bg-slate-800/60 group"
                           >
                             <img
                               src={`http://localhost:8000${url}`}
@@ -253,6 +323,30 @@ const Assignments = () => {
                           </button>
                         ))}
                       </div>
+
+                      {/* Approve / Reject buttons */}
+                      {task.status === 'completed' && task.approved === null && (
+                        <div className="flex gap-3 mt-4 pt-3 border-t border-slate-700/20">
+                          <button
+                            onClick={() => approveTask(task.id)}
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-white text-xs font-bold hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+                          >
+                            <FiThumbsUp size={13} /> Approve Work
+                          </button>
+                          <button
+                            onClick={() => rejectTask(task.id)}
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white text-xs font-bold hover:shadow-lg hover:shadow-red-500/25 transition-all"
+                          >
+                            <FiThumbsDown size={13} /> Reject & Reassign
+                          </button>
+                        </div>
+                      )}
+
+                      {task.approved === true && (
+                        <div className="mt-3 flex items-center gap-2 text-[10px] font-bold text-emerald-400">
+                          <FiCheckCircle size={12} /> Work approved {task.approvedAt ? `on ${formatDate(task.approvedAt)}` : ''}
+                        </div>
+                      )}
                     </div>
                   )}
 

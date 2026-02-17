@@ -10,6 +10,7 @@ import Analytics from './pages/Analytics';
 import ComplaintStatus from './pages/ComplaintStatus';
 import Responses from './pages/Responses';
 import Rewards from './pages/Rewards';
+import MyTasks from './pages/MyTasks';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
           <Route path="/complaint-status" element={<ComplaintStatus />} />
           <Route path="/responses" element={<Responses />} />
           <Route path="/rewards" element={<Rewards />} />
+          <Route path="/my-tasks" element={<MyTasks />} />
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

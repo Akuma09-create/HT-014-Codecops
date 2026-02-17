@@ -1,6 +1,6 @@
 // Sidebar navigation — role-based navigation links
 import { NavLink } from 'react-router-dom';
-import { FiGrid, FiAlertTriangle, FiUsers, FiMessageSquare, FiBarChart2, FiInbox, FiCheckCircle, FiAward, FiClipboard } from 'react-icons/fi';
+import { FiGrid, FiAlertTriangle, FiUsers, FiMessageSquare, FiBarChart2, FiInbox, FiCheckCircle, FiAward, FiClipboard, FiCamera } from 'react-icons/fi';
 
 const adminLinks = [
   { to: '/dashboard', icon: FiGrid, label: 'Dashboard' },
@@ -8,6 +8,11 @@ const adminLinks = [
   { to: '/assignments', icon: FiClipboard, label: 'Task Manager' },
   { to: '/alerts', icon: FiAlertTriangle, label: 'Alerts' },
   { to: '/analytics', icon: FiBarChart2, label: 'Analytics' },
+];
+
+const workerLinks = [
+  { to: '/my-tasks', icon: FiClipboard, label: 'My Tasks' },
+  { to: '/complaints', icon: FiMessageSquare, label: 'Complaints' },
 ];
 
 const citizenLinks = [
@@ -19,7 +24,7 @@ const citizenLinks = [
 
 const Sidebar = () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const links = user.role === 'citizen' ? citizenLinks : adminLinks;
+  const links = user.role === 'citizen' ? citizenLinks : user.role === 'worker' ? workerLinks : adminLinks;
   return (
     <aside className="fixed left-0 top-[60px] bottom-0 w-[240px] bg-[#0f172a] border-r border-slate-800/60 overflow-y-auto z-40">
       <div className="p-4 pt-6">
