@@ -18,6 +18,14 @@ class TokenResponse(BaseModel):
 class ComplaintCreate(BaseModel):
     location: str
     description: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    media_urls: list[str] = []
+
+
+class ComplaintRespond(BaseModel):
+    response: str
+    status: str = "in_progress"  # in_progress or resolved
 
 
 class AssignmentCreate(BaseModel):
