@@ -1,7 +1,7 @@
 // Login page — authentication with demo quick-login buttons
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import { FiMail, FiLock, FiArrowRight } from 'react-icons/fi';
 
 const Login = () => {
@@ -17,7 +17,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post('/api/auth/login', { email, password });
+      const res = await api.post('/api/auth/login', { email, password });
       localStorage.setItem('token', res.data.access_token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
       navigate('/dashboard');
