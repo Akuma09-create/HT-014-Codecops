@@ -122,6 +122,31 @@ class DataStore:
             {"workerId": 3, "workerName": "Priya Sharma", "binIds": [6, 11], "status": "active", "assignedAt": "2026-02-17T06:00:00"},
         ]
 
+        # Tasks assigned by admin to workers
+        self.tasks = [
+            {
+                "id": 1, "workerId": 2, "workerName": "Ravi Kumar", "complaintId": 1,
+                "title": "Clear overflow at Supe Road",
+                "description": "Garbage overflow reported by citizen. Clear the area and sanitize.",
+                "location": "Supe Road",
+                "priority": "high", "status": "in_progress",
+                "assignedAt": "2026-02-16T08:00:00", "completedAt": None,
+                "completionPhotos": [],
+                "completionNote": None,
+            },
+            {
+                "id": 2, "workerId": 3, "workerName": "Priya Sharma", "complaintId": 2,
+                "title": "Clean Market Yard area",
+                "description": "Stray dogs tearing garbage bags. Clean area and install better bins.",
+                "location": "Market Yard Baramati",
+                "priority": "medium", "status": "completed",
+                "assignedAt": "2026-02-15T07:00:00", "completedAt": "2026-02-15T14:30:00",
+                "completionPhotos": [],
+                "completionNote": "Area cleaned and new covered bins installed.",
+            },
+        ]
+        self._task_id = 2
+
         # Collection history
         self.collections = [
             {"day": "Mon", "collections": 12},
