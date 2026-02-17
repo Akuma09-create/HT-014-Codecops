@@ -5,7 +5,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.responses import FileResponse
 from datetime import datetime
-from ..schemas import TaskCreate
+from ..schemas import TaskCreate, WorkerCreate
 from ..auth import get_current_user
 from ..data_store import store
 
@@ -186,3 +186,37 @@ def get_workers(user: dict = Depends(get_current_user)):
     with store.lock:
         workers = [{"id": u["id"], "name": u["name"], "email": u["email"]} for u in store.users if u["role"] == "worker"]
         return workers
+
+
+@router.post("/workers")
+def create_worker(req: WorkerCreate, user: dict = Depends(get_current_user)):
+    """Admin creates a new worker account with email/password."""
+    if user["role"] != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can add workers")
+    with store.lock:
+        # Check for duplicate email
+        if any(u["email"] == req.email for u in store.users):
+            raise HTTPException(status_code=400, detail="Email already exists")
+        new_id = max(u["id"] for u in store.users) + 1
+        worker = {
+            "id": new_id,
+            "name": req.name,
+            "email": req.email,
+            "password": req.password,
+            "role": "worker",
+        }
+        store.users.append(worker)
+        return {"id": worker["id"], "name": worker["name"], "email": worker["email"], "role": "worker"}
+
+
+@router.delete("/workers/{worker_id}")
+def delete_worker(worker_id: int, user: dict = Depends(get_current_user)):
+    """Admin removes a worker."""
+    if user["role"] != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can remove workers")
+    with store.lock:
+        worker = next((u for u in store.users if u["id"] == worker_id and u["role"] == "worker"), None)
+        if not worker:
+            raise HTTPException(status_code=404, detail="Worker not found")
+        store.users = [u for u in store.users if u["id"] != worker_id]
+        return {"message": f"Worker {worker['name']} removed"}
