@@ -9,6 +9,12 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class CitizenRegister(BaseModel):
+    name: str
+    email: str
+    password: str
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
