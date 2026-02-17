@@ -1,77 +1,49 @@
+// Sidebar navigation — main app navigation links
 import { NavLink } from 'react-router-dom';
-import {
-  FiGrid,
-  FiTrash2,
-  FiAlertTriangle,
-  FiTruck,
-  FiMessageSquare,
-  FiBarChart2,
-  FiX,
-} from 'react-icons/fi';
+import { FiGrid, FiTrash2, FiAlertTriangle, FiUsers, FiMessageSquare, FiBarChart2 } from 'react-icons/fi';
 
-const menuItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: FiGrid },
-  { path: '/bins', label: 'Bin Management', icon: FiTrash2 },
-  { path: '/alerts', label: 'Alerts', icon: FiAlertTriangle },
-  { path: '/assignments', label: 'Assignments', icon: FiTruck },
-  { path: '/complaints', label: 'Complaints', icon: FiMessageSquare },
-  { path: '/analytics', label: 'Analytics', icon: FiBarChart2 },
+const links = [
+  { to: '/dashboard', icon: FiGrid, label: 'Dashboard' },
+  { to: '/bins', icon: FiTrash2, label: 'Bins' },
+  { to: '/alerts', icon: FiAlertTriangle, label: 'Alerts' },
+  { to: '/assignments', icon: FiUsers, label: 'Assignments' },
+  { to: '/complaints', icon: FiMessageSquare, label: 'Complaints' },
+  { to: '/analytics', icon: FiBarChart2, label: 'Analytics' },
 ];
 
-const Sidebar = ({ isOpen, toggleSidebar }) => {
+const Sidebar = () => {
   return (
-    <>
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={toggleSidebar} />
-      )}
-
-      <aside
-        className={`fixed top-[60px] left-0 h-[calc(100vh-60px)] w-[240px] bg-[#0f172a] border-r border-slate-800 z-40
-          transform transition-transform duration-300
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
-      >
-        <div className="flex justify-end p-2 lg:hidden">
-          <button onClick={toggleSidebar} className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-all">
-            <FiX size={18} />
-          </button>
-        </div>
-
-        <nav className="px-3 py-4">
-          <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest px-3 mb-3">Navigation</p>
-          <div className="space-y-0.5">
-            {menuItems.map((item, index) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                onClick={() => { if (window.innerWidth < 1024) toggleSidebar(); }}
-                style={{ animationDelay: `${index * 0.04}s` }}
-                className="animate-fade-in-left block"
-              >
-                {({ isActive }) => (
-                  <div
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-200
-                    ${isActive
-                      ? 'bg-cyan-500/10 text-cyan-400 border-l-2 border-cyan-400'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <item.icon size={16} className={isActive ? 'text-cyan-400' : ''} />
-                    <span>{item.label}</span>
-                  </div>
-                )}
-              </NavLink>
-            ))}
-          </div>
+    <aside className="fixed left-0 top-[60px] bottom-0 w-[240px] bg-[#0f172a] border-r border-slate-800/60 overflow-y-auto z-40">
+      <div className="p-4 pt-6">
+        <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-4 px-3">Navigation</p>
+        <nav className="space-y-1">
+          {links.map(({ to, icon: Icon, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
+                  isActive
+                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent'
+                }`
+              }
+            >
+              <Icon size={16} className="group-hover:scale-110 transition-transform" />
+              {label}
+            </NavLink>
+          ))}
         </nav>
+      </div>
 
-        <div className="absolute bottom-4 left-0 right-0 px-4">
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-center">
-            <p className="text-[11px] text-slate-400 font-semibold">Cleanify v1.0</p>
-            <p className="text-[10px] text-slate-600 mt-0.5">Smart Waste Platform</p>
-          </div>
+      {/* Bottom info */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-800/40">
+        <div className="card-surface rounded-xl p-3">
+          <p className="text-[10px] font-bold text-slate-500 mb-1">Cleanify v1.0.1</p>
+          <p className="text-[10px] text-slate-600">Smart Waste Management</p>
         </div>
-      </aside>
-    </>
+      </div>
+    </aside>
   );
 };
 
