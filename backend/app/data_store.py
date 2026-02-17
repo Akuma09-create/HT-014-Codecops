@@ -32,23 +32,24 @@ class DataStore:
         ]
 
         # 15 smart bins across Bangalore
+        # Baramati city areas
         areas = ["Central", "South", "East", "West", "North"]
         locations = [
-            ("MG Road & Brigade Rd Junction", "Central"),
-            ("Koramangala 4th Block", "South"),
-            ("Indiranagar 100ft Road", "East"),
-            ("Rajajinagar 1st Block", "West"),
-            ("Hebbal Flyover", "North"),
-            ("Jayanagar 4th Block", "South"),
-            ("Whitefield Main Road", "East"),
-            ("Malleshwaram 8th Cross", "West"),
-            ("Yelahanka New Town", "North"),
-            ("Commercial Street", "Central"),
-            ("BTM Layout 2nd Stage", "South"),
-            ("Marathahalli Bridge", "East"),
-            ("Vijayanagar BDA Complex", "West"),
-            ("RT Nagar Main Road", "North"),
-            ("Residency Road", "Central"),
+            ("Baramati Bus Stand", "Central"),
+            ("Bhigwan Road Chowk", "South"),
+            ("Nira River Bridge", "East"),
+            ("Katewadi Phata", "West"),
+            ("Jalochi Road", "North"),
+            ("Market Yard Baramati", "Central"),
+            ("Shivaji Chowk", "South"),
+            ("Phaltan Road", "West"),
+            ("Indapur Highway Junction", "East"),
+            ("Baramati Krishi Vidyapeeth", "North"),
+            ("Malegaon Chowk", "Central"),
+            ("Supe Road", "South"),
+            ("Morgaon Road", "East"),
+            ("Station Road Baramati", "West"),
+            ("Karhati Phata", "North"),
         ]
 
         import random
@@ -94,17 +95,26 @@ class DataStore:
 
         # Complaints
         self.complaints = [
-            {"id": 1, "userId": 4, "userName": "Amit Patel", "location": "BTM Layout 2nd Stage",
+            {"id": 1, "userId": 4, "userName": "Amit Patel", "location": "Supe Road",
              "description": "Garbage overflow since 2 days", "status": "pending",
              "createdAt": "2026-02-15T10:30:00"},
-            {"id": 2, "userId": 4, "userName": "Amit Patel", "location": "Koramangala 4th Block",
+            {"id": 2, "userId": 4, "userName": "Amit Patel", "location": "Market Yard Baramati",
              "description": "Stray dogs tearing garbage bags", "status": "in_progress",
              "createdAt": "2026-02-14T14:20:00"},
-            {"id": 3, "userId": 4, "userName": "Amit Patel", "location": "MG Road",
+            {"id": 3, "userId": 4, "userName": "Amit Patel", "location": "Shivaji Chowk",
              "description": "Bin is damaged and leaking", "status": "resolved",
              "createdAt": "2026-02-13T09:15:00"},
         ]
         self._complaint_id = 3
+
+        # Rewards — points earned per citizen
+        self.rewards = {
+            4: {"points": 150, "level": "Silver", "history": [
+                {"action": "Complaint submitted", "points": 50, "date": "2026-02-15T10:30:00"},
+                {"action": "Complaint submitted", "points": 50, "date": "2026-02-14T14:20:00"},
+                {"action": "Complaint resolved", "points": 50, "date": "2026-02-13T09:15:00"},
+            ]}
+        }
 
         # Worker assignments
         self.assignments = [
