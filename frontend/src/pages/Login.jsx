@@ -20,8 +20,9 @@ const Login = () => {
       const res = await api.post('/api/auth/login', { email, password });
       localStorage.setItem('token', res.data.access_token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
-      // Citizen goes to complaints, others go to dashboard
-      const dest = res.data.user.role === 'citizen' ? '/complaints' : '/dashboard';
+      // Citizen goes to complaints, worker to my-tasks, admin to dashboard
+      const role = res.data.user.role;
+      const dest = role === 'citizen' ? '/complaints' : role === 'worker' ? '/my-tasks' : '/dashboard';
       navigate(dest);
     } catch (err) {
       setError(err.response?.data?.detail || 'Login failed');
