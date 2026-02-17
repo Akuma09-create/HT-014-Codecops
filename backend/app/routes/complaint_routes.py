@@ -25,7 +25,27 @@ def get_complaints(user: dict = Depends(get_current_user)):
             data = [c for c in store.complaints if c["userId"] == user["id"]]
         else:
             data = list(store.complaints)
-        return sorted(data, key=lambda c: c["createdAt"], reverse=True)
+
+        # Enrich with linked task info (completion photos, worker name, approval)
+        enriched = []
+        for c in data:
+            item = dict(c)
+            task = next((t for t in store.tasks if t.get("complaintId") == c["id"]), None)
+            if task:
+                item["linkedTask"] = {
+                    "id": task["id"],
+                    "workerName": task["workerName"],
+                    "status": task["status"],
+                    "approved": task.get("approved"),
+                    "completionPhotos": task.get("completionPhotos", []) if task.get("approved") else [],
+                    "completionNote": task.get("completionNote") if task.get("approved") else None,
+                    "completedAt": task.get("completedAt"),
+                }
+            else:
+                item["linkedTask"] = None
+            enriched.append(item)
+
+        return sorted(enriched, key=lambda c: c["createdAt"], reverse=True)
 
 
 @router.post("/upload-media")
