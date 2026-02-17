@@ -160,12 +160,35 @@ const Complaints = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="animate-fade-in-up">
-        <h2 className="text-2xl font-extrabold text-accent" style={{ fontFamily: 'var(--font-display)' }}>Complaints</h2>
-        <p className="text-sm text-slate-500 mt-1">Report waste issues and track their resolution</p>
+        <h2 className="text-2xl font-extrabold text-white flex items-center gap-3" style={{ fontFamily: 'var(--font-display)' }}>
+          <span className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500 to-red-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
+            <FiMessageSquare size={20} className="text-white" />
+          </span>
+          {user.role === 'citizen' ? 'My Complaints' : 'Citizen Complaints'}
+        </h2>
+        <p className="text-sm text-slate-500 mt-1.5 ml-[52px]">{user.role === 'citizen' ? 'Report waste issues and track resolution' : 'Review, respond, and manage citizen complaints'}</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Submit Form */}
+      {/* Admin Summary Cards */}
+      {user.role === 'admin' && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in-up" style={{ animationDelay: '0.05s' }}>
+          {[
+            { label: 'Total', value: allComplaints.length, gradient: 'from-cyan-500/15 to-cyan-500/5', border: 'border-cyan-500/20', color: 'text-cyan-400' },
+            { label: 'Pending', value: allComplaints.filter(c => c.status === 'pending').length, gradient: 'from-amber-500/15 to-amber-500/5', border: 'border-amber-500/20', color: 'text-amber-400' },
+            { label: 'In Progress', value: allComplaints.filter(c => c.status === 'in_progress').length, gradient: 'from-blue-500/15 to-blue-500/5', border: 'border-blue-500/20', color: 'text-blue-400' },
+            { label: 'Resolved', value: allComplaints.filter(c => c.status === 'resolved').length, gradient: 'from-emerald-500/15 to-emerald-500/5', border: 'border-emerald-500/20', color: 'text-emerald-400' },
+          ].map(({ label, value, gradient, border, color }) => (
+            <div key={label} className={`bg-gradient-to-br ${gradient} border ${border} rounded-2xl p-4`}>
+              <p className="text-2xl font-extrabold text-white" style={{ fontFamily: 'var(--font-display)' }}>{value}</p>
+              <p className={`text-[10px] font-bold ${color}`}>{label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className={`grid grid-cols-1 ${user.role === 'citizen' ? 'lg:grid-cols-3' : ''} gap-5`}>
+        {/* Submit Form — only for citizens */}
+        {user.role === 'citizen' && (
         <div className="card p-6 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
           <h3 className="text-sm font-bold text-slate-200 mb-4 flex items-center gap-2" style={{ fontFamily: 'var(--font-display)' }}>
             <span className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
@@ -292,9 +315,10 @@ const Complaints = () => {
             )}
           </form>
         </div>
+        )}
 
         {/* Complaint List */}
-        <div className="lg:col-span-2 space-y-3 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+        <div className={`${user.role === 'citizen' ? 'lg:col-span-2' : ''} space-y-3 animate-fade-in-up`} style={{ animationDelay: '0.2s' }}>
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-300" style={{ fontFamily: 'var(--font-display)' }}>All Complaints</h3>
             <span className="text-[10px] text-slate-600 font-semibold">{allComplaints.length} total</span>
