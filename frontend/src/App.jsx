@@ -1,3 +1,4 @@
+// App router — defines all application routes
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Login from './pages/Login';
@@ -12,10 +13,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public */}
         <Route path="/login" element={<Login />} />
-
-        {/* Protected (layout with sidebar) */}
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/bins" element={<BinManagement />} />
@@ -24,8 +22,6 @@ function App() {
           <Route path="/complaints" element={<Complaints />} />
           <Route path="/analytics" element={<Analytics />} />
         </Route>
-
-        {/* Default redirect */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
