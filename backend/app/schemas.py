@@ -33,6 +33,12 @@ class AssignmentCreate(BaseModel):
     bin_ids: list[int]
 
 
+class WorkerCreate(BaseModel):
+    name: str
+    email: str
+    password: str
+
+
 class TaskCreate(BaseModel):
     worker_id: int
     complaint_id: int | None = None

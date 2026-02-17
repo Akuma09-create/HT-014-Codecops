@@ -1,6 +1,6 @@
 // Assignments — admin task management with assign, track, approve worker completion photos, and map view
 import { useState, useEffect } from 'react';
-import { FiUsers, FiClipboard, FiCheck, FiAlertTriangle, FiMapPin, FiChevronDown, FiChevronUp, FiPlus, FiImage, FiClock, FiX, FiSend, FiExternalLink, FiCheckCircle, FiXCircle, FiThumbsUp, FiThumbsDown } from 'react-icons/fi';
+import { FiUsers, FiClipboard, FiCheck, FiAlertTriangle, FiMapPin, FiChevronDown, FiChevronUp, FiPlus, FiImage, FiClock, FiX, FiSend, FiExternalLink, FiCheckCircle, FiXCircle, FiThumbsUp, FiThumbsDown, FiUserPlus, FiTrash2, FiMail, FiLock, FiUser } from 'react-icons/fi';
 import StatusBadge from '../components/StatusBadge';
 import api from '../api';
 
@@ -10,11 +10,17 @@ const Assignments = () => {
   const [complaints, setComplaints] = useState([]);
   const [expandedTask, setExpandedTask] = useState(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showWorkerModal, setShowWorkerModal] = useState(false);
   const [filter, setFilter] = useState('all');
   const [photoViewer, setPhotoViewer] = useState(null); // { taskId, photos }
 
   // New task form
   const [newTask, setNewTask] = useState({ worker_id: '', complaint_id: '', title: '', description: '', location: '', priority: 'medium' });
+
+  // New worker form
+  const [newWorker, setNewWorker] = useState({ name: '', email: '', password: '' });
+  const [workerError, setWorkerError] = useState('');
+  const [creatingWorker, setCreatingWorker] = useState(false);
 
   useEffect(() => {
     fetchTasks();
@@ -81,6 +87,35 @@ const Assignments = () => {
     }
   };
 
+  const handleAddWorker = async (e) => {
+    e.preventDefault();
+    setWorkerError('');
+    if (!newWorker.name.trim() || !newWorker.email.trim() || !newWorker.password.trim()) return;
+    setCreatingWorker(true);
+    try {
+      await api.post('/api/tasks/workers', {
+        name: newWorker.name.trim(),
+        email: newWorker.email.trim(),
+        password: newWorker.password.trim(),
+      });
+      setNewWorker({ name: '', email: '', password: '' });
+      setShowWorkerModal(false);
+      fetchWorkers();
+    } catch (err) {
+      setWorkerError(err.response?.data?.detail || 'Failed to add worker');
+    }
+    setCreatingWorker(false);
+  };
+
+  const deleteWorker = async (workerId) => {
+    if (!confirm('Remove this worker?')) return;
+    try {
+      await api.delete(`/api/tasks/workers/${workerId}`);
+      fetchWorkers();
+      fetchTasks();
+    } catch (err) { console.error(err); }
+  };
+
   const approveTask = async (taskId) => {
     try {
       await api.post(`/api/tasks/${taskId}/approve`);
@@ -144,12 +179,52 @@ const Assignments = () => {
           </h2>
           <p className="text-sm text-slate-500 mt-1 ml-[52px]">Assign, track, and review worker tasks</p>
         </div>
-        <button
-          onClick={() => setShowAssignModal(true)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-violet-600 text-white text-sm font-bold hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
-        >
-          <FiPlus size={16} /> Assign Task
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowWorkerModal(true)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-bold hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+          >
+            <FiUserPlus size={16} /> Add Worker
+          </button>
+          <button
+            onClick={() => setShowAssignModal(true)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-violet-600 text-white text-sm font-bold hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
+          >
+            <FiPlus size={16} /> Assign Task
+          </button>
+        </div>
+      </div>
+
+      {/* Workers List */}
+      <div className="card p-5 animate-fade-in-up" style={{ animationDelay: '0.03s' }}>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2" style={{ fontFamily: 'var(--font-display)' }}>
+            <FiUsers size={14} className="text-emerald-400" /> Workers ({workers.length})
+          </h3>
+        </div>
+        <div className="flex gap-3 flex-wrap">
+          {workers.map(w => (
+            <div key={w.id} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/40 rounded-xl px-4 py-2.5 group">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xs font-bold">
+                {w.name.split(' ').map(n => n[0]).join('')}
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-200">{w.name}</p>
+                <p className="text-[10px] text-slate-500">{w.email} · ID: {w.id}</p>
+              </div>
+              <button
+                onClick={() => deleteWorker(w.id)}
+                className="ml-2 w-6 h-6 rounded-md bg-red-500/0 hover:bg-red-500/15 text-slate-600 hover:text-red-400 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                title="Remove worker"
+              >
+                <FiTrash2 size={11} />
+              </button>
+            </div>
+          ))}
+          {workers.length === 0 && (
+            <p className="text-[10px] text-slate-600">No workers added yet. Click "Add Worker" to create one.</p>
+          )}
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -523,6 +598,87 @@ const Assignments = () => {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Add Worker Modal */}
+      {showWorkerModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0f172a] border border-slate-700/60 rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-slate-800/60">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-display)' }}>
+                <FiUserPlus className="text-emerald-400" /> Add New Worker
+              </h3>
+              <button onClick={() => { setShowWorkerModal(false); setWorkerError(''); }} className="w-8 h-8 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 flex items-center justify-center">
+                <FiX size={16} />
+              </button>
+            </div>
+            <form onSubmit={handleAddWorker} className="p-5 space-y-4">
+              {workerError && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5">
+                  <p className="text-xs text-red-400 font-medium">{workerError}</p>
+                </div>
+              )}
+
+              {/* Name */}
+              <div>
+                <label className="text-xs font-semibold text-slate-400 mb-1.5 block">Full Name *</label>
+                <div className="flex items-center bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3 gap-3 focus-within:border-emerald-500/50 transition-colors">
+                  <FiUser className="text-slate-500" size={14} />
+                  <input
+                    type="text"
+                    value={newWorker.name}
+                    onChange={(e) => setNewWorker(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="e.g. Rahul Jadhav"
+                    className="bg-transparent text-sm text-slate-200 placeholder-slate-600 outline-none w-full"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="text-xs font-semibold text-slate-400 mb-1.5 block">Email (Login ID) *</label>
+                <div className="flex items-center bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3 gap-3 focus-within:border-emerald-500/50 transition-colors">
+                  <FiMail className="text-slate-500" size={14} />
+                  <input
+                    type="email"
+                    value={newWorker.email}
+                    onChange={(e) => setNewWorker(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="e.g. worker3@cleanify.com"
+                    className="bg-transparent text-sm text-slate-200 placeholder-slate-600 outline-none w-full"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="text-xs font-semibold text-slate-400 mb-1.5 block">Password *</label>
+                <div className="flex items-center bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3 gap-3 focus-within:border-emerald-500/50 transition-colors">
+                  <FiLock className="text-slate-500" size={14} />
+                  <input
+                    type="text"
+                    value={newWorker.password}
+                    onChange={(e) => setNewWorker(prev => ({ ...prev, password: e.target.value }))}
+                    placeholder="Set a password"
+                    className="bg-transparent text-sm text-slate-200 placeholder-slate-600 outline-none w-full"
+                    required
+                  />
+                </div>
+                <p className="text-[10px] text-slate-600 mt-1">Worker will use this email & password to log in</p>
+              </div>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={creatingWorker}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-bold hover:shadow-lg hover:shadow-emerald-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {creatingWorker ? 'Creating...' : <><FiUserPlus size={14} /> Create Worker Account</>}
+              </button>
+            </form>
           </div>
         </div>
       )}
