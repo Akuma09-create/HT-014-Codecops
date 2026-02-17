@@ -1,41 +1,43 @@
-// Login page — authentication with demo quick-login buttons
+// Register page — citizen self-registration
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api';
-import { FiMail, FiLock, FiArrowRight } from 'react-icons/fi';
+import { FiMail, FiLock, FiUser, FiArrowRight, FiCheckCircle } from 'react-icons/fi';
 
-const Login = () => {
+const Register = () => {
   const navigate = useNavigate();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    if (password.length < 4) {
+      setError('Password must be at least 4 characters');
+      return;
+    }
+
+    setLoading(true);
     try {
-      const res = await api.post('/api/auth/login', { email, password });
+      const res = await api.post('/api/auth/register', { name, email, password });
       localStorage.setItem('token', res.data.access_token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
-      // Citizen goes to complaints, worker to my-tasks, admin to dashboard
-      const role = res.data.user.role;
-      const dest = role === 'citizen' ? '/complaints' : role === 'worker' ? '/my-tasks' : '/dashboard';
-      navigate(dest);
+      navigate('/complaints');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Login failed');
+      setError(err.response?.data?.detail || 'Registration failed');
     } finally {
       setLoading(false);
     }
   };
-
-  const demoAccounts = [
-    { label: 'Admin', email: 'admin@cleanify.com', password: 'admin123' },
-    { label: 'Worker', email: 'worker1@cleanify.com', password: 'worker123' },
-    { label: 'Citizen', email: 'citizen@cleanify.com', password: 'citizen123' },
-  ];
 
   return (
     <div className="min-h-screen bg-[#0b1120] grid-pattern flex items-center justify-center p-4">
@@ -51,7 +53,8 @@ const Login = () => {
 
         {/* Form Card */}
         <div className="card p-8">
-          <h2 className="text-lg font-bold text-slate-200 mb-6" style={{ fontFamily: 'var(--font-display)' }}>Sign in to your account</h2>
+          <h2 className="text-lg font-bold text-slate-200 mb-1" style={{ fontFamily: 'var(--font-display)' }}>Create your account</h2>
+          <p className="text-xs text-slate-500 mb-6">Register as a citizen to report complaints & earn rewards</p>
 
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4">
@@ -59,7 +62,22 @@ const Login = () => {
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-slate-400 mb-1.5 block">Full Name</label>
+              <div className="flex items-center bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3 gap-3 focus-within:border-cyan-500/50 transition-colors">
+                <FiUser className="text-slate-500" size={15} />
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your full name"
+                  className="bg-transparent text-sm text-slate-200 placeholder-slate-600 outline-none w-full"
+                  required
+                />
+              </div>
+            </div>
+
             <div>
               <label className="text-xs font-semibold text-slate-400 mb-1.5 block">Email</label>
               <div className="flex items-center bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3 gap-3 focus-within:border-cyan-500/50 transition-colors">
@@ -68,7 +86,7 @@ const Login = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@cleanify.com"
+                  placeholder="you@example.com"
                   className="bg-transparent text-sm text-slate-200 placeholder-slate-600 outline-none w-full"
                   required
                 />
@@ -83,7 +101,22 @@ const Login = () => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password"
+                  placeholder="Create a password"
+                  className="bg-transparent text-sm text-slate-200 placeholder-slate-600 outline-none w-full"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-400 mb-1.5 block">Confirm Password</label>
+              <div className="flex items-center bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3 gap-3 focus-within:border-cyan-500/50 transition-colors">
+                <FiCheckCircle className="text-slate-500" size={15} />
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm your password"
                   className="bg-transparent text-sm text-slate-200 placeholder-slate-600 outline-none w-full"
                   required
                 />
@@ -95,35 +128,19 @@ const Login = () => {
               disabled={loading}
               className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-violet-600 text-white text-sm font-bold hover:shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? 'Creating account...' : 'Register'}
               {!loading && <FiArrowRight size={15} />}
             </button>
           </form>
 
-          {/* Register Link */}
-          <div className="mt-4 text-center">
+          {/* Login Link */}
+          <div className="mt-6 pt-5 border-t border-slate-800/60 text-center">
             <p className="text-xs text-slate-500">
-              Don't have an account?{' '}
-              <Link to="/register" className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors">
-                Register as Citizen
+              Already have an account?{' '}
+              <Link to="/login" className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors">
+                Sign In
               </Link>
             </p>
-          </div>
-
-          {/* Demo Accounts */}
-          <div className="mt-6 pt-5 border-t border-slate-800/60">
-            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-3">Quick Login</p>
-            <div className="grid grid-cols-3 gap-2">
-              {demoAccounts.map((acc) => (
-                <button
-                  key={acc.label}
-                  onClick={() => { setEmail(acc.email); setPassword(acc.password); }}
-                  className="py-2 px-3 rounded-lg bg-slate-800/40 border border-slate-700/40 text-[11px] font-semibold text-slate-400 hover:text-cyan-400 hover:border-cyan-500/30 transition-all"
-                >
-                  {acc.label}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       </div>
@@ -131,4 +148,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Register;
