@@ -31,3 +31,12 @@ class ComplaintRespond(BaseModel):
 class AssignmentCreate(BaseModel):
     worker_id: int
     bin_ids: list[int]
+
+
+class TaskCreate(BaseModel):
+    worker_id: int
+    complaint_id: int | None = None
+    title: str
+    description: str
+    location: str
+    priority: str = "medium"  # low, medium, high, urgent
