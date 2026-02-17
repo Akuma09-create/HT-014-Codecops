@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.background import BackgroundScheduler
 from .simulator import simulate_fill_levels
-from .routes import auth_routes, bin_routes, alert_routes, complaint_routes, stats_routes
+from .routes import auth_routes, bin_routes, alert_routes, complaint_routes, stats_routes, task_routes
 
 scheduler = BackgroundScheduler()
 
@@ -27,7 +27,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5177"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,6 +38,7 @@ app.include_router(bin_routes.router, prefix="/api/bins", tags=["Bins"])
 app.include_router(alert_routes.router, prefix="/api/alerts", tags=["Alerts"])
 app.include_router(complaint_routes.router, prefix="/api/complaints", tags=["Complaints"])
 app.include_router(stats_routes.router, prefix="/api/stats", tags=["Stats"])
+app.include_router(task_routes.router, prefix="/api/tasks", tags=["Tasks"])
 
 
 @app.get("/")
