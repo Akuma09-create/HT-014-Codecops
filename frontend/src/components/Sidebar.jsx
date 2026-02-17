@@ -1,13 +1,12 @@
 // Sidebar navigation — role-based navigation links
 import { NavLink } from 'react-router-dom';
-import { FiGrid, FiTrash2, FiAlertTriangle, FiUsers, FiMessageSquare, FiBarChart2, FiInbox, FiCheckCircle, FiAward } from 'react-icons/fi';
+import { FiGrid, FiAlertTriangle, FiUsers, FiMessageSquare, FiBarChart2, FiInbox, FiCheckCircle, FiAward, FiClipboard } from 'react-icons/fi';
 
 const adminLinks = [
   { to: '/dashboard', icon: FiGrid, label: 'Dashboard' },
-  { to: '/bins', icon: FiTrash2, label: 'Bins' },
-  { to: '/alerts', icon: FiAlertTriangle, label: 'Alerts' },
-  { to: '/assignments', icon: FiUsers, label: 'Assignments' },
   { to: '/complaints', icon: FiMessageSquare, label: 'Complaints' },
+  { to: '/assignments', icon: FiClipboard, label: 'Task Manager' },
+  { to: '/alerts', icon: FiAlertTriangle, label: 'Alerts' },
   { to: '/analytics', icon: FiBarChart2, label: 'Analytics' },
 ];
 
