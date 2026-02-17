@@ -8,6 +8,9 @@ import Alerts from './pages/Alerts';
 import Assignments from './pages/Assignments';
 import Complaints from './pages/Complaints';
 import Analytics from './pages/Analytics';
+import ComplaintStatus from './pages/ComplaintStatus';
+import Responses from './pages/Responses';
+import Rewards from './pages/Rewards';
 
 function App() {
   return (
@@ -21,6 +24,9 @@ function App() {
           <Route path="/assignments" element={<Assignments />} />
           <Route path="/complaints" element={<Complaints />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/complaint-status" element={<ComplaintStatus />} />
+          <Route path="/responses" element={<Responses />} />
+          <Route path="/rewards" element={<Rewards />} />
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

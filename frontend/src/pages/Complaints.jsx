@@ -1,31 +1,154 @@
-// Complaints — citizen issue reporting and tracking
-import { useState } from 'react';
-import { FiMessageSquare, FiSend, FiUser, FiMapPin, FiClock } from 'react-icons/fi';
+// Complaints — citizen issue reporting with media upload & live location + admin management
+import { useState, useEffect, useRef } from 'react';
+import { FiMessageSquare, FiSend, FiUser, FiMapPin, FiClock, FiCornerDownRight, FiCamera, FiVideo, FiX, FiNavigation, FiImage } from 'react-icons/fi';
 import StatusBadge from '../components/StatusBadge';
-import { complaints } from '../data/mockData';
+import api from '../api';
 
 const Complaints = () => {
-  const [allComplaints, setAllComplaints] = useState(complaints);
+  const [allComplaints, setAllComplaints] = useState([]);
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
+  const [mediaFiles, setMediaFiles] = useState([]);      // { file, preview, type }
+  const [mediaPreviews, setMediaPreviews] = useState([]); // preview URLs
+  const [uploadedUrls, setUploadedUrls] = useState([]);
+  const [latitude, setLatitude] = useState(null);
+  const [longitude, setLongitude] = useState(null);
+  const [locating, setLocating] = useState(false);
+  const [locError, setLocError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [respondingTo, setRespondingTo] = useState(null);
+  const [responseText, setResponseText] = useState('');
+  const [responseStatus, setResponseStatus] = useState('in_progress');
+  const fileInputRef = useRef(null);
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    fetchComplaints();
+  }, []);
+
+  const fetchComplaints = async () => {
+    try {
+      const res = await api.get('/api/complaints');
+      setAllComplaints(res.data);
+    } catch (err) {
+      console.error('Failed to fetch complaints', err);
+    }
+  };
+
+  // --- Media upload ---
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    const newFiles = files.map(file => {
+      const isVideo = file.type.startsWith('video/');
+      return {
+        file,
+        preview: URL.createObjectURL(file),
+        type: isVideo ? 'video' : 'image',
+      };
+    });
+    setMediaFiles(prev => [...prev, ...newFiles]);
+  };
+
+  const removeMedia = (index) => {
+    setMediaFiles(prev => {
+      URL.revokeObjectURL(prev[index].preview);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const uploadAllMedia = async () => {
+    const urls = [];
+    for (const m of mediaFiles) {
+      const formData = new FormData();
+      formData.append('file', m.file);
+      try {
+        const res = await api.post('/api/complaints/upload-media', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        urls.push(res.data.url);
+      } catch (err) {
+        console.error('Upload failed', err);
+      }
+    }
+    return urls;
+  };
+
+  // --- Live location ---
+  const shareLocation = () => {
+    if (!navigator.geolocation) {
+      setLocError('Geolocation is not supported by your browser');
+      return;
+    }
+    setLocating(true);
+    setLocError('');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLatitude(pos.coords.latitude);
+        setLongitude(pos.coords.longitude);
+        setLocating(false);
+      },
+      (err) => {
+        setLocError('Unable to get location. Please allow location access.');
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const clearLocation = () => {
+    setLatitude(null);
+    setLongitude(null);
+  };
+
+  // --- Submit ---
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!location.trim() || !description.trim()) return;
+    setSubmitting(true);
+    try {
+      // Upload media first
+      const urls = mediaFiles.length > 0 ? await uploadAllMedia() : [];
 
-    const newComplaint = {
-      id: allComplaints.length + 1,
-      userId: 4,
-      userName: JSON.parse(localStorage.getItem('user') || '{}').name || 'User',
-      location: location.trim(),
-      description: description.trim(),
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-    };
+      await api.post('/api/complaints', {
+        location: location.trim(),
+        description: description.trim(),
+        latitude,
+        longitude,
+        media_urls: urls,
+      });
+      setLocation('');
+      setDescription('');
+      setMediaFiles([]);
+      setLatitude(null);
+      setLongitude(null);
+      fetchComplaints();
+    } catch (err) {
+      console.error('Failed to submit complaint', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-    setAllComplaints([newComplaint, ...allComplaints]);
-    setLocation('');
-    setDescription('');
+  const handleRespond = async (complaintId) => {
+    if (!responseText.trim()) return;
+    try {
+      await api.post(`/api/complaints/${complaintId}/respond`, { response: responseText.trim(), status: responseStatus });
+      setRespondingTo(null);
+      setResponseText('');
+      setResponseStatus('in_progress');
+      fetchComplaints();
+    } catch (err) {
+      console.error('Failed to respond', err);
+    }
+  };
+
+  const handleResolve = async (complaintId) => {
+    try {
+      await api.post(`/api/complaints/${complaintId}/resolve`);
+      fetchComplaints();
+    } catch (err) {
+      console.error('Failed to resolve', err);
+    }
   };
 
   const formatDate = (iso) => {
@@ -65,23 +188,108 @@ const Complaints = () => {
                 />
               </div>
             </div>
+
+            {/* Live Location */}
+            <div>
+              <button
+                type="button"
+                onClick={shareLocation}
+                disabled={locating}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-cyan-500/30 text-cyan-400 text-xs font-bold hover:bg-cyan-500/5 transition-colors disabled:opacity-50"
+              >
+                <FiNavigation size={13} className={locating ? 'animate-pulse' : ''} />
+                {locating ? 'Getting location...' : latitude ? 'Location shared ✓' : 'Share Live Location'}
+              </button>
+              {latitude && longitude && (
+                <div className="mt-2 flex items-center justify-between bg-emerald-500/5 border border-emerald-500/20 rounded-lg px-3 py-2">
+                  <span className="text-[10px] text-emerald-400 font-mono">{latitude.toFixed(6)}, {longitude.toFixed(6)}</span>
+                  <button type="button" onClick={clearLocation} className="text-slate-500 hover:text-red-400"><FiX size={12} /></button>
+                </div>
+              )}
+              {locError && <p className="text-[10px] text-red-400 mt-1">{locError}</p>}
+            </div>
+
             <div>
               <label className="text-xs font-semibold text-slate-400 mb-1.5 block">Description</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe the issue..."
-                rows={4}
+                rows={3}
                 className="w-full bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder-slate-600 outline-none resize-none focus:border-cyan-500/50 transition-colors"
                 required
               />
             </div>
+
+            {/* Media Upload */}
+            <div>
+              <label className="text-xs font-semibold text-slate-400 mb-1.5 block">Photos / Videos</label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <div className="flex gap-2 mb-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-violet-500/30 text-violet-400 text-xs font-bold hover:bg-violet-500/5 transition-colors"
+                >
+                  <FiCamera size={13} /> Add Photo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-violet-500/30 text-violet-400 text-xs font-bold hover:bg-violet-500/5 transition-colors"
+                >
+                  <FiVideo size={13} /> Add Video
+                </button>
+              </div>
+
+              {/* Media previews */}
+              {mediaFiles.length > 0 && (
+                <div className="grid grid-cols-3 gap-2">
+                  {mediaFiles.map((m, i) => (
+                    <div key={i} className="relative rounded-lg overflow-hidden border border-slate-700/50 aspect-square bg-slate-800/60">
+                      {m.type === 'image' ? (
+                        <img src={m.preview} alt="preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <FiVideo size={20} className="text-slate-400" />
+                          <span className="text-[9px] text-slate-500 absolute bottom-1 left-1">Video</span>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeMedia(i)}
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500/80 text-white flex items-center justify-center hover:bg-red-500"
+                      >
+                        <FiX size={10} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-violet-600 text-white text-sm font-bold hover:shadow-lg hover:shadow-cyan-500/25 transition-all flex items-center justify-center gap-2"
+              disabled={submitting}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-violet-600 text-white text-sm font-bold hover:shadow-lg hover:shadow-cyan-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <FiSend size={14} /> Submit Complaint
+              {submitting ? 'Submitting...' : <><FiSend size={14} /> Submit Complaint</>}
             </button>
+
+            {/* Points info */}
+            {user.role === 'citizen' && (
+              <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl px-3 py-2 text-center">
+                <p className="text-[10px] font-bold text-amber-400">🏆 Earn Reward Points!</p>
+                <p className="text-[9px] text-slate-500 mt-0.5">+50 for complaint · +20 for photo/video · +10 for location</p>
+              </div>
+            )}
           </form>
         </div>
 
@@ -106,6 +314,78 @@ const Complaints = () => {
                 <span className="flex items-center gap-1"><FiMapPin size={10} /> {c.location}</span>
                 <span className="flex items-center gap-1"><FiUser size={10} /> {c.userName}</span>
               </div>
+
+              {/* Location coordinates */}
+              {c.latitude && c.longitude && (
+                <div className="mt-2">
+                  <a
+                    href={`https://www.google.com/maps?q=${c.latitude},${c.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-400 hover:text-cyan-300 bg-cyan-500/5 border border-cyan-500/20 rounded-lg px-2 py-1"
+                  >
+                    <FiNavigation size={9} /> View on Map ({c.latitude.toFixed(4)}, {c.longitude.toFixed(4)})
+                  </a>
+                </div>
+              )}
+
+              {/* Media thumbnails */}
+              {c.mediaUrls && c.mediaUrls.length > 0 && (
+                <div className="mt-2 flex gap-2 flex-wrap">
+                  {c.mediaUrls.map((url, i) => (
+                    <a key={i} href={`http://localhost:8000${url}`} target="_blank" rel="noopener noreferrer"
+                      className="w-16 h-16 rounded-lg overflow-hidden border border-slate-700/50 bg-slate-800/60 flex items-center justify-center hover:border-cyan-500/50 transition-colors">
+                      {url.match(/\.(mp4|webm|mov)$/i) ? (
+                        <FiVideo size={16} className="text-slate-400" />
+                      ) : (
+                        <img src={`http://localhost:8000${url}`} alt="evidence" className="w-full h-full object-cover" />
+                      )}
+                    </a>
+                  ))}
+                </div>
+              )}
+
+              {/* Show response if exists */}
+              {c.response && (
+                <div className="mt-3 p-3 rounded-lg bg-cyan-500/5 border border-cyan-500/20">
+                  <p className="text-[10px] font-bold text-cyan-400 mb-1 flex items-center gap-1"><FiCornerDownRight size={10} /> Admin Response</p>
+                  <p className="text-xs text-slate-300">{c.response}</p>
+                </div>
+              )}
+
+              {/* Admin actions */}
+              {user.role === 'admin' && c.status !== 'resolved' && (
+                <div className="mt-3 flex items-center gap-2">
+                  {respondingTo === c.id ? (
+                    <div className="w-full space-y-2">
+                      <textarea
+                        value={responseText}
+                        onChange={(e) => setResponseText(e.target.value)}
+                        placeholder="Type your response..."
+                        rows={2}
+                        className="w-full bg-slate-800/60 border border-slate-700/50 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-600 outline-none resize-none focus:border-cyan-500/50"
+                      />
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={responseStatus}
+                          onChange={(e) => setResponseStatus(e.target.value)}
+                          className="bg-slate-800/60 border border-slate-700/50 rounded-lg px-2 py-1.5 text-xs text-slate-300 outline-none"
+                        >
+                          <option value="in_progress">In Progress</option>
+                          <option value="resolved">Resolved</option>
+                        </select>
+                        <button onClick={() => handleRespond(c.id)} className="px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-400 text-xs font-bold hover:bg-cyan-500/30 transition-colors">Send</button>
+                        <button onClick={() => setRespondingTo(null)} className="px-3 py-1.5 rounded-lg bg-slate-700/50 text-slate-400 text-xs font-bold hover:bg-slate-700 transition-colors">Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <button onClick={() => setRespondingTo(c.id)} className="px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[11px] font-bold hover:bg-cyan-500/20 transition-colors">Respond</button>
+                      <button onClick={() => handleResolve(c.id)} className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-bold hover:bg-emerald-500/20 transition-colors">Resolve</button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           ))}
 
